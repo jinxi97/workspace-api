@@ -16,6 +16,7 @@ workspaces: dict[str, SandboxClient] = {}
 def echo_command():
     with SandboxClient(
         template_name="python-runtime-template",
+        api_url=ROUTER_URL,
         namespace="default"
     ) as sandbox:
         return sandbox.run("echo 'Hello from the sandboxed environment!'").stdout
