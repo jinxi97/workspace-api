@@ -6,7 +6,7 @@ from agentic_sandbox import SandboxClient
 
 app = FastAPI()
 
-ROUTER_URL = os.getenv("ROUTER_URL")  # Your internal load balancer IP
+ROUTER_URL = os.getenv("ROUTER_URL", "http://sandbox-router-svc.default.svc.cluster.local:8080")  # Your internal load balancer IP
 
 
 # Store active workspaces
