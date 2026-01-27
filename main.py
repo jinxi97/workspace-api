@@ -13,6 +13,10 @@ ROUTER_URL = os.getenv("ROUTER_URL", "http://sandbox-router-svc.default.svc.clus
 workspaces: dict[str, SandboxClient] = {}
 
 @app.get("/")
+def health_check():
+    return {"status": "healthy"}
+
+@app.get("/echo")
 def echo_command():
     print(f"ROUTER_URL: {ROUTER_URL}")
     with SandboxClient(
