@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workspace-api
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workspace-api
+  template:
+    metadata:
+      labels:
+        app: workspace-api
+    spec:
+      serviceAccountName: workspace-api-sa
+      containers:
+      - name: workspace-api
+        # Make sure you build your image with this name!
+        # e.g., gcloud builds submit --tag gcr.io/funky-485504/workspace-api:latest .
+        image: gcr.io/funky-485504/workspace-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        # Internal Mode: Connects to the Router via internal Cluster DNS
+        - name: ROUTER_INTERNAL_URL
+          value: "http://sandbox-router-svc.default.svc.cluster.local:8080"
+        
+        # Optional: Set the default template
+        - name: SANDBOX_TEMPLATE
+          value: "python-sandbox-template"

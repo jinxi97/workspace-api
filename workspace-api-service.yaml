@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: workspace-api
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    # This MUST match the labels in your deployment
+    app: workspace-api
+  ports:
+  - protocol: TCP
+    port: 80         # The port available to the outside world
+    targetPort: 8080 # The port your container is listening on

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workspace-api-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sandbox-manager-role
+  namespace: default
+rules:
+# Allow managing Claims and Sandboxes
+- apiGroups: ["extensions.agents.x-k8s.io", "agents.x-k8s.io"] # Added the second group
+  resources: ["sandboxclaims", "sandboxtemplates", "sandboxes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sandbox-manager-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: workspace-api-sa
+  namespace: default
+roleRef:
+  kind: Role
+  name: sandbox-manager-role
+  apiGroup: rbac.authorization.k8s.io
