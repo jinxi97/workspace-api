@@ -20,7 +20,8 @@ def echo_command():
         api_url=ROUTER_URL,
         namespace="default"
     ) as sandbox:
-        return sandbox.run("echo 'Hello from the sandboxed environment!'").stdout
+        output = sandbox.run("echo 'Hello from the sandboxed environment!'").stdout
+    return output
 
 
 @app.post("/workspaces")
