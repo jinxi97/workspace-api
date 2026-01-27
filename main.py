@@ -14,6 +14,7 @@ workspaces: dict[str, SandboxClient] = {}
 
 @app.get("/")
 def echo_command():
+    print(f"ROUTER_URL: {ROUTER_URL}")
     with SandboxClient(
         template_name="python-runtime-template",
         api_url=ROUTER_URL,
