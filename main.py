@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from agentic_sandbox import SandboxClient
 import uuid
+import os
 
 app = FastAPI()
+
+ROUTER_URL = os.getenv("ROUTER_URL")  # Your internal load balancer IP
 
 # Store active workspaces
 workspaces: dict[str, SandboxClient] = {}
@@ -13,6 +16,7 @@ def create_workspace():
     workspace_id = str(uuid.uuid4())
     sandbox = SandboxClient(
         template_name="python-runtime-template",
+        api_url=ROUTER_URL,
         namespace="default"
     )
     sandbox.__enter__()  # Start the sandbox
