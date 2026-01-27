@@ -2,10 +2,32 @@ from fastapi import FastAPI, HTTPException
 from agentic_sandbox import SandboxClient
 import uuid
 import os
+from kubernetes import client
+from google.auth import default
+from google.auth.transport.requests import Request
 
 app = FastAPI()
 
+GKE_ENDPOINT = os.environ.get("GKE_ENDPOINT")
 ROUTER_URL = os.getenv("ROUTER_URL")  # Your internal load balancer IP
+
+def configure_k8s():
+    """Configure Kubernetes client before using SandboxClient."""
+    credentials, _ = default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+    credentials.refresh(Request())
+    
+    configuration = client.Configuration()
+    configuration.host = GKE_ENDPOINT
+    configuration.api_key = {"authorization": f"Bearer {credentials.token}"}
+    configuration.verify_ssl = False
+    
+    # Set as default configuration globally
+    client.Configuration.set_default(configuration)
+
+# Call once at startup
+configure_k8s()
 
 # Store active workspaces
 workspaces: dict[str, SandboxClient] = {}
