@@ -8,6 +8,7 @@ dependencies = [
     "agentic-sandbox",
     "fastapi[standard]>=0.128.0",
     "google-auth>=2.48.0",
+    "google-cloud-container>=2.62.0",
 ]
 
 [tool.uv.sources]
