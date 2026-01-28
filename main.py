@@ -9,6 +9,12 @@ app = FastAPI()
 ROUTER_URL = os.getenv("ROUTER_URL")  # Your internal load balancer IP
 API_SECRET = os.getenv("API_SECRET", "dev-secret-key")
 
+if not ROUTER_URL:
+    # Fail here so you know exactly what is wrong
+    raise ValueError("CRITICAL: ROUTER_URL env var is missing. Cannot start Internal Mode.")
+else:
+    print(f"ROUTER_URL: {ROUTER_URL}")
+
 # Store active workspaces
 workspaces: dict[str, SandboxClient] = {}
 
