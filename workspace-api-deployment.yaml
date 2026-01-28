@@ -24,9 +24,8 @@ spec:
         - containerPort: 8080
         env:
         # Internal Mode: Connects to the Router via internal Cluster DNS
-        - name: ROUTER_INTERNAL_URL
+        - name: ROUTER_URL
           value: "http://sandbox-router-svc.default.svc.cluster.local:8080"
-        
-        # Optional: Set the default template
+
         - name: SANDBOX_TEMPLATE
           value: "python-sandbox-template"
