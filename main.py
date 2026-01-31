@@ -1,9 +1,12 @@
 import uuid
 import os
+import asyncio
+import json
 
-from fastapi import FastAPI, HTTPException, Header, Depends, status
+from fastapi import FastAPI, HTTPException, Header, Depends, status, WebSocket, WebSocketDisconnect
 from agentic_sandbox import SandboxClient
 from kubernetes import client, config
+from kubernetes.stream import stream
 
 app = FastAPI()
 
@@ -34,7 +37,7 @@ TEMPLATE_VERSION = "v1alpha1"
 TEMPLATE_PLURAL = "sandboxtemplates"
 
 # Store active workspaces
-workspaces: dict[str, SandboxClient] = {}
+workspaces: dict[str, dict[str, object]] = {}
 
 
 def create_pvc(workspace_id: str, namespace: str = "default") -> str:
@@ -208,6 +211,106 @@ def exec_command(workspace_id: str, command: str):
         "stderr": result.stderr,
         "exit_code": result.exit_code
     }
+
+
+@app.websocket("/workspaces/{workspace_id}/terminal")
+async def terminal_session(websocket: WebSocket, workspace_id: str):
+    await websocket.accept()
+
+    api_secret = websocket.query_params.get("token")
+    if not api_secret:
+        protocol_header = websocket.headers.get("sec-websocket-protocol")
+        if protocol_header:
+            # Use first protocol value as token.
+            api_secret = protocol_header.split(",")[0].strip()
+    if api_secret != API_SECRET:
+        await websocket.close(code=1008)
+        return
+
+    ws = workspaces.get(workspace_id)
+    if not ws:
+        await websocket.send_json({"type": "error", "data": "Workspace not found"})
+        await websocket.close(code=1008)
+        return
+
+    sandbox = ws["sandbox"]
+    pod_name = getattr(sandbox, "pod_name", None)
+    if not pod_name:
+        await websocket.send_json({"type": "error", "data": "Workspace pod not ready"})
+        await websocket.close(code=1011)
+        return
+
+    exec_client = None
+    try:
+        exec_client = stream(
+            k8s_core.connect_get_namespaced_pod_exec,
+            pod_name,
+            "default",
+            container="python-runtime",
+            command=["/bin/sh", "-c", "cd /workspace && exec /bin/sh"],
+            stderr=True,
+            stdin=True,
+            stdout=True,
+            tty=True,
+            _preload_content=False,
+        )
+
+        async def send_output():
+            try:
+                while exec_client.is_open():
+                    await asyncio.to_thread(exec_client.update, timeout=1)
+                    while exec_client.peek_stdout():
+                        data = exec_client.read_stdout()
+                        if data:
+                            await websocket.send_json({"type": "stdout", "data": data})
+                    while exec_client.peek_stderr():
+                        data = exec_client.read_stderr()
+                        if data:
+                            await websocket.send_json({"type": "stderr", "data": data})
+                    await asyncio.sleep(0.01)
+            except Exception:
+                pass
+
+        async def recv_input():
+            try:
+                while True:
+                    message = await websocket.receive_text()
+                    try:
+                        payload = json.loads(message)
+                    except json.JSONDecodeError:
+                        payload = None
+
+                    if isinstance(payload, dict):
+                        if "input" in payload:
+                            exec_client.write_stdin(payload["input"])
+                        elif payload.get("signal") == "ctrl+c":
+                            exec_client.write_stdin("\x03")
+                        elif payload.get("type") == "resize":
+                            rows = payload.get("rows")
+                            cols = payload.get("cols")
+                            if isinstance(rows, int) and isinstance(cols, int):
+                                resize_payload = json.dumps({"Height": rows, "Width": cols})
+                                exec_client.write_channel(4, resize_payload)
+                        else:
+                            exec_client.write_stdin(message)
+                    else:
+                        exec_client.write_stdin(message)
+            except WebSocketDisconnect:
+                pass
+
+        output_task = asyncio.create_task(send_output())
+        input_task = asyncio.create_task(recv_input())
+        done, pending = await asyncio.wait(
+            {output_task, input_task},
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for task in pending:
+            task.cancel()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if exec_client and exec_client.is_open():
+            exec_client.close()
 
 
 @app.delete("/workspaces/{workspace_id}", dependencies=[Depends(verify_secret)])
