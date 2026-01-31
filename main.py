@@ -182,7 +182,7 @@ def create_workspace():
     # 3. Create sandbox using the custom template
     sandbox = SandboxClient(
         template_name=template_name,
-        # api_url=ROUTER_URL,
+        api_url=ROUTER_URL,
         namespace="default"
     )
     sandbox.__enter__()
