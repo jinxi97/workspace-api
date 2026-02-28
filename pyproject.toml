@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "agentic-sandbox",
+    "cloud-sql-python-connector[asyncpg]>=1.20.0",
     "fastapi[standard]>=0.128.0",
     "kubernetes>=35.0.0",
 ]

@@ -10,7 +10,7 @@ from kubernetes.stream import stream
 
 app = FastAPI()
 
-ROUTER_URL = os.getenv("ROUTER_URL", "http://sandbox-router-svc.default.svc.cluster.local:8080")  # Your internal load balancer IP
+ROUTER_URL = os.getenv("ROUTER_URL", "http://sandbox-router-svc.agent-sandbox-application.svc.cluster.local:8080")  # Your internal load balancer IP
 API_SECRET = os.getenv("API_SECRET", "dev-secret-key")
 STORAGE_CLASS = os.getenv("STORAGE_CLASS", "standard-rwo")
 WORKSPACE_STORAGE_SIZE = os.getenv("WORKSPACE_STORAGE_SIZE", "5Gi")
